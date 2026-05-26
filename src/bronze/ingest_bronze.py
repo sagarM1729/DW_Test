@@ -24,6 +24,9 @@ def ingest_to_bronze(spark: SparkSession, table_name: str, source_path: str, cat
     print(f"Starting Auto Loader for {full_table_name}...")
     print(f"Source: {source_path}")
 
+    # Set spark configuration to ensure any newly created Delta table automatically has CDF enabled
+    spark.conf.set("spark.databricks.delta.properties.defaults.enableChangeDataFeed", "true")
+
     # Set up the Auto Loader read stream with schema evolution
     df = (spark.readStream
           .format("cloudFiles")
@@ -39,6 +42,7 @@ def ingest_to_bronze(spark: SparkSession, table_name: str, source_path: str, cat
                          .withColumn("sys_load_timestamp", current_timestamp())
 
     # Write stream to Delta table using Unity Catalog path
+    # CDF is enabled inherently due to the default spark conf set above.
     query = (df_with_metadata.writeStream
              .format("delta")
              .outputMode("append")
@@ -49,8 +53,6 @@ def ingest_to_bronze(spark: SparkSession, table_name: str, source_path: str, cat
 
     query.awaitTermination()
 
-    # Enable Change Data Feed for downstream incremental processing (Silver)
-    spark.sql(f"ALTER TABLE {full_table_name} SET TBLPROPERTIES (delta.enableChangeDataFeed = true)")
     print(f"Ingestion for {full_table_name} complete. CDF enabled.")
 
 

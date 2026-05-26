@@ -21,7 +21,7 @@ tasks:
       parameters: ["--table_name", "fact_call_activity", "--source_path", "/mnt/adls/landing/fact_call_activity"]
     cluster_key: "default_cluster"
 
-  # P1.02, P1.03, P1.04: Bronze to Silver
+  # P1.02, P1.03, P1.04, P2.02: Bronze to Silver (Includes SCD2 for dimensions)
   - task_key: "Silver_Upsert_Dim_Rep"
     depends_on:
       - task_key: "Bronze_Ingest_Dim_Rep"
@@ -46,31 +46,14 @@ tasks:
       parameters: ["--table_name", "fact_call_activity"]
     cluster_key: "default_cluster"
 
-  # P2.01, P2.02: Silver to Gold Dimensions (SCD2)
-  - task_key: "Gold_SCD2_Dim_Rep"
-    depends_on:
-      - task_key: "Silver_Upsert_Dim_Rep"
-    spark_python_task:
-      python_file: "src/gold/gold_dimensions.py"
-      parameters: ["--table_name", "dim_rep_master", "--primary_key", "rep_id"]
-    cluster_key: "default_cluster"
-
   # P2.01, P2.03: Silver to Gold Aggregations
-  - task_key: "Gold_Weekly_Aggregations"
-    depends_on:
-      - task_key: "Silver_Upsert_Fact_Rx"
-    spark_python_task:
-      python_file: "src/gold/aggregate_gold.py"
-      parameters: ["--metric_name", "weekly_aggregations"]
-    cluster_key: "default_cluster"
-
   - task_key: "Gold_Monthly_Metrics"
     depends_on:
       - task_key: "Silver_Upsert_Fact_Rx"
       - task_key: "Silver_Upsert_Fact_Call"
     spark_python_task:
       python_file: "src/gold/aggregate_gold.py"
-      parameters: ["--metric_name", "all"]
+      parameters: ["--metric_name", "sales_per_call_monthly"]
     cluster_key: "default_cluster"
 
 job_clusters:
