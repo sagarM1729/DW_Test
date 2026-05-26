@@ -1,0 +1,48 @@
+name: "Gold Metrics Pipeline"
+tasks:
+  # Source Aligned
+  - task_key: "Gold_Source_Aligned_Rx"
+    spark_python_task:
+      python_file: "src/gold/source_aligned/gold_rx_enriched.py"
+    cluster_key: "default_cluster"
+
+  - task_key: "Gold_Source_Aligned_Call"
+    spark_python_task:
+      python_file: "src/gold/source_aligned/gold_call_enriched.py"
+    cluster_key: "default_cluster"
+
+  - task_key: "Gold_Source_Aligned_IQVIA"
+    spark_python_task:
+      python_file: "src/gold/source_aligned/gold_iqvia_enriched.py"
+    cluster_key: "default_cluster"
+
+  # Metrics (Run in parallel after source aligned is ready)
+  - task_key: "Gold_Metrics_Call"
+    depends_on:
+      - task_key: "Gold_Source_Aligned_Call"
+    spark_python_task:
+      python_file: "src/gold/metrics/call_metrics.py"
+    cluster_key: "default_cluster"
+
+  - task_key: "Gold_Metrics_Rx"
+    depends_on:
+      - task_key: "Gold_Source_Aligned_Rx"
+      - task_key: "Gold_Source_Aligned_IQVIA"
+    spark_python_task:
+      python_file: "src/gold/metrics/rx_metrics.py"
+    cluster_key: "default_cluster"
+
+  - task_key: "Gold_Metrics_Rep_Productivity"
+    depends_on:
+      - task_key: "Gold_Source_Aligned_Rx"
+      - task_key: "Gold_Source_Aligned_Call"
+    spark_python_task:
+      python_file: "src/gold/metrics/rep_productivity.py"
+    cluster_key: "default_cluster"
+
+job_clusters:
+  - job_cluster_key: "default_cluster"
+    new_cluster:
+      spark_version: "13.3.x-scala2.12"
+      node_type_id: "i3.xlarge"
+      num_workers: 2

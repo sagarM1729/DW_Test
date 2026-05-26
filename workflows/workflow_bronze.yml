@@ -1,0 +1,26 @@
+name: "Bronze Ingestion Pipeline"
+tasks:
+  - task_key: "Ingest_Dim_Rep"
+    spark_python_task:
+      python_file: "src/bronze/ingest_bronze.py"
+      parameters: ["--table_name", "dim_rep_master", "--source_path", "/mnt/adls/landing/dim_rep_master"]
+    cluster_key: "default_cluster"
+
+  - task_key: "Ingest_Fact_Rx"
+    spark_python_task:
+      python_file: "src/bronze/ingest_bronze.py"
+      parameters: ["--table_name", "fact_xponents_rx", "--source_path", "/mnt/adls/landing/fact_xponents_rx"]
+    cluster_key: "default_cluster"
+
+  - task_key: "Ingest_Fact_Call"
+    spark_python_task:
+      python_file: "src/bronze/ingest_bronze.py"
+      parameters: ["--table_name", "fact_call_activity", "--source_path", "/mnt/adls/landing/fact_call_activity"]
+    cluster_key: "default_cluster"
+
+job_clusters:
+  - job_cluster_key: "default_cluster"
+    new_cluster:
+      spark_version: "13.3.x-scala2.12"
+      node_type_id: "i3.xlarge"
+      num_workers: 2
