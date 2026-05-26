@@ -1,0 +1,2621 @@
+{
+  "dim_rep_master": {
+    "category": "dimension",
+    "description": "Master registry of all field sales representatives. Captures identity, role hierarchy (Territory Manager, District Manager, etc.) and employment status. Central lookup for all rep-level CRM activity and performance attribution. Slowly-changing in nature — refreshed when reps join, leave, or change roles.",
+    "primaryKey": [
+      "rep_id"
+    ],
+    "columns": [
+      {
+        "n": "rep_id",
+        "r": "pk",
+        "d": "Unique internal rep identifier (surrogate key)."
+      },
+      {
+        "n": "rep_first_name",
+        "r": "attribute",
+        "d": "Rep's first name."
+      },
+      {
+        "n": "rep_last_name",
+        "r": "attribute",
+        "d": "Rep's last name."
+      },
+      {
+        "n": "rep_email_id",
+        "r": "ak",
+        "d": "Corporate email — alternate unique identifier."
+      },
+      {
+        "n": "rep_role",
+        "r": "attribute",
+        "d": "Salesforce role: e.g. Territory Manager, District Manager, Regional Business Director."
+      },
+      {
+        "n": "status",
+        "r": "attribute",
+        "d": "Employment status: Active / Inactive. Drives inclusion in reporting periods."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name that populated this record."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Effective date of the record snapshot."
+      }
+    ]
+  },
+  "dim_prescriber": {
+    "category": "dimension",
+    "description": "Master registry of Healthcare Providers (HCPs) targeted by the sales force. Each prescriber carries a unique NPI (National Provider Identifier) used to cross-reference IQVIA Rx data. Tier classification drives call frequency targets and sampling strategy.",
+    "primaryKey": [
+      "prescriber_id"
+    ],
+    "columns": [
+      {
+        "n": "prescriber_id",
+        "r": "pk",
+        "d": "Internal HCP surrogate key."
+      },
+      {
+        "n": "npi_id",
+        "r": "ak",
+        "d": "National Provider Identifier — universal HCP identifier for IQVIA data joins."
+      },
+      {
+        "n": "prescriber_name",
+        "r": "attribute",
+        "d": "Full name of the HCP."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "Medical specialty (e.g. Cardiology, Internal Medicine). Used for specialty-level market share cuts."
+      },
+      {
+        "n": "practice_type",
+        "r": "attribute",
+        "d": "Practice setting: solo, group, hospital-affiliated, etc."
+      },
+      {
+        "n": "prescriber_tier",
+        "r": "attribute",
+        "d": "Commercial targeting tier (Tier 1/2/3) based on Rx volume and potential."
+      },
+      {
+        "n": "prescriber_email",
+        "r": "attribute",
+        "d": "HCP's email — used for digital/VAE engagement."
+      },
+      {
+        "n": "prescriber_phone",
+        "r": "attribute",
+        "d": "Practice contact number."
+      },
+      {
+        "n": "practice_id",
+        "r": "attribute",
+        "d": "Practice group identifier — links HCP to their affiliated practice."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "dim_product": {
+    "category": "dimension",
+    "description": "Product catalog covering both company-promoted brands and competitor molecules tracked in the market. The company_flag column is critical — it distinguishes our products from market competitors. NDC-11 codes serve as universal cross-reference keys to IQVIA and DDD datasets.",
+    "primaryKey": [
+      "product_id"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "pk",
+        "d": "Internal product surrogate key."
+      },
+      {
+        "n": "ndc11",
+        "r": "ak",
+        "d": "National Drug Code (11-digit). Universal identifier for IQVIA and DDD joins."
+      },
+      {
+        "n": "brand_name",
+        "r": "attribute",
+        "d": "Branded product name (e.g. Lipitor)."
+      },
+      {
+        "n": "generic_name",
+        "r": "attribute",
+        "d": "INN/generic molecule name (e.g. atorvastatin)."
+      },
+      {
+        "n": "manufacturer",
+        "r": "attribute",
+        "d": "Pharmaceutical manufacturer name."
+      },
+      {
+        "n": "atc_code",
+        "r": "attribute",
+        "d": "WHO Anatomical Therapeutic Chemical code — enables therapeutic class grouping."
+      },
+      {
+        "n": "company_flag",
+        "r": "flag",
+        "d": "\"Y\" = company product, \"N\" = competitor. Pivotal for market share numerator/denominator logic."
+      },
+      {
+        "n": "price_per_unit_usd",
+        "r": "measure",
+        "d": "List price per dispensing unit in USD."
+      },
+      {
+        "n": "price_type",
+        "r": "attribute",
+        "d": "Pricing basis: WAC, AWP, etc."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "dim_geography": {
+    "category": "dimension",
+    "description": "Zip-code level geographic master with lat/lng coordinates for mapping. The geo_index and geos_in_zip fields handle multi-territory zip overlaps — critical for accurate spillover analysis. This table is the geographic foundation for all territory alignment and Rx attribution.",
+    "primaryKey": [
+      "geo_id"
+    ],
+    "columns": [
+      {
+        "n": "geo_id",
+        "r": "pk",
+        "d": "Internal geography surrogate key."
+      },
+      {
+        "n": "zip_code",
+        "r": "ak",
+        "d": "5-digit US ZIP code — alternate key for IQVIA data joins."
+      },
+      {
+        "n": "city",
+        "r": "attribute",
+        "d": "City name."
+      },
+      {
+        "n": "state",
+        "r": "attribute",
+        "d": "State abbreviation (2-char)."
+      },
+      {
+        "n": "state_id",
+        "r": "attribute",
+        "d": "State numeric FIPS code."
+      },
+      {
+        "n": "region",
+        "r": "attribute",
+        "d": "Sales region grouping (e.g. Northeast, Southeast)."
+      },
+      {
+        "n": "lat",
+        "r": "measure",
+        "d": "Latitude coordinate for mapping."
+      },
+      {
+        "n": "lng",
+        "r": "measure",
+        "d": "Longitude coordinate for mapping."
+      },
+      {
+        "n": "population",
+        "r": "measure",
+        "d": "ZIP population — used as sizing variable for territory potential models."
+      },
+      {
+        "n": "geo_index",
+        "r": "attribute",
+        "d": "Internal geographic index value."
+      },
+      {
+        "n": "geos_in_zip",
+        "r": "measure",
+        "d": "Count of territory geos sharing this ZIP — indicates multi-territory overlap situations."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "dim_clm_content": {
+    "category": "dimension",
+    "description": "Library of all Closed Loop Marketing (CLM) digital sales aid files used by reps during HCP calls. Tracks versioning, language, channel, and approval status. Used to measure content performance (engagement duration, skip rate) and ensure reps are using the latest approved materials.",
+    "primaryKey": [
+      "clm_file_id"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. CLM content is product-specific."
+      },
+      {
+        "n": "clm_file_id",
+        "r": "pk",
+        "d": "Unique CLM content file identifier."
+      },
+      {
+        "n": "clm_file_name",
+        "r": "attribute",
+        "d": "Display name of the sales aid (e.g. \"MOA Slide Deck v2\")."
+      },
+      {
+        "n": "clm_file_type",
+        "r": "attribute",
+        "d": "Content type: PDF, HTML, Video, Slide deck."
+      },
+      {
+        "n": "clm_file_version",
+        "r": "attribute",
+        "d": "Version number — tracks content lifecycle and update cycles."
+      },
+      {
+        "n": "clm_file_language",
+        "r": "attribute",
+        "d": "Language of the content (for multi-lingual deployments)."
+      },
+      {
+        "n": "clm_file_channel",
+        "r": "attribute",
+        "d": "Intended delivery channel: field, virtual, email."
+      },
+      {
+        "n": "clm_file_status",
+        "r": "attribute",
+        "d": "Approval status: Active / Retired / Under Review."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "dim_territory_alignment": {
+    "category": "dimension",
+    "description": "Maps each sales rep to their assigned territories and geographies. This is a slowly-changing dimension — updated during annual (or mid-cycle) territory realignment exercises. Essential for correctly routing Rx data, call data, and sales revenue to the responsible rep and territory.",
+    "primaryKey": [
+      "geo_id",
+      "territory_id",
+      "rep_id"
+    ],
+    "columns": [
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. The geography unit assigned to this rep/territory."
+      },
+      {
+        "n": "territory_id",
+        "r": "pk",
+        "d": "Territory identifier (part of composite PK). Logical sales territory grouping."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master. The rep responsible for this territory geo."
+      },
+      {
+        "n": "rep_role",
+        "r": "attribute",
+        "d": "Rep role in this territory assignment (denormalized from dim_rep_master)."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Effective date — critical for point-in-time territory reporting."
+      }
+    ]
+  },
+  "dim_prescriber_geo_mapping": {
+    "category": "dimension",
+    "description": "Resolves the many-to-many relationship between prescribers (who may practice at multiple locations) and geographies. The primary_flag identifies the main practice, enabling accurate Rx attribution to a territory even when an HCP straddles multiple zip codes.",
+    "primaryKey": [
+      "prescriber_id",
+      "geo_id"
+    ],
+    "columns": [
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. The HCP being mapped."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. The geography where this prescriber practices."
+      },
+      {
+        "n": "primary_flag",
+        "r": "flag",
+        "d": "\"Y\" = primary practice location. Used to avoid double-counting Rx across territories."
+      },
+      {
+        "n": "practice_name",
+        "r": "attribute",
+        "d": "Name of the practice at this geographic location."
+      },
+      {
+        "n": "practice_address_line_1",
+        "r": "attribute",
+        "d": "Street address of this practice location."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "fact_call_activity": {
+    "category": "fact",
+    "description": "Core CRM fact table — every field call logged by a sales rep. Captures the complete call context: who visited whom, which product was detailed, samples dropped, call notes, outcome, and key messages. Source system is the CRM (typically Veeva CRM). This is the primary input for all rep activity and field force productivity metrics.",
+    "primaryKey": [
+      "call_id"
+    ],
+    "columns": [
+      {
+        "n": "monthly_call_plan_id",
+        "r": "fk",
+        "d": "FK → fact_call_plan. Links execution (actual call) to plan (targeted call)."
+      },
+      {
+        "n": "call_id",
+        "r": "pk",
+        "d": "Unique call event identifier."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master. The rep who made the call."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. The HCP visited."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. Geography where the call occurred."
+      },
+      {
+        "n": "prescriber_name",
+        "r": "attribute",
+        "d": "Denormalized HCP name at time of call."
+      },
+      {
+        "n": "prescriber_specialty",
+        "r": "attribute",
+        "d": "Denormalized HCP specialty at time of call."
+      },
+      {
+        "n": "prescriber_grade",
+        "r": "attribute",
+        "d": "Targeting grade/decile at time of call."
+      },
+      {
+        "n": "prescriber_phone",
+        "r": "attribute",
+        "d": "HCP phone number at time of call."
+      },
+      {
+        "n": "prescriber_email",
+        "r": "attribute",
+        "d": "HCP email at time of call."
+      },
+      {
+        "n": "practice_id",
+        "r": "attribute",
+        "d": "Practice identifier (denormalized)."
+      },
+      {
+        "n": "practice_name",
+        "r": "attribute",
+        "d": "Practice name at time of call."
+      },
+      {
+        "n": "practice_type",
+        "r": "attribute",
+        "d": "Practice setting at time of call."
+      },
+      {
+        "n": "practice_address_line1",
+        "r": "attribute",
+        "d": "Practice street address."
+      },
+      {
+        "n": "practice_city",
+        "r": "attribute",
+        "d": "Practice city."
+      },
+      {
+        "n": "practice_state",
+        "r": "attribute",
+        "d": "Practice state."
+      },
+      {
+        "n": "practice_zip",
+        "r": "attribute",
+        "d": "Practice ZIP code."
+      },
+      {
+        "n": "call_date",
+        "r": "temporal",
+        "d": "Date of the call."
+      },
+      {
+        "n": "call_start_timestamp",
+        "r": "temporal",
+        "d": "Exact start time — used for call duration calculation."
+      },
+      {
+        "n": "call_end_timestamp",
+        "r": "temporal",
+        "d": "Exact end time."
+      },
+      {
+        "n": "call_duration_minutes",
+        "r": "measure",
+        "d": "Total call duration in minutes. Input to avg_interaction_time metrics."
+      },
+      {
+        "n": "call_submission_timestamp",
+        "r": "temporal",
+        "d": "When the call was submitted in CRM. Gap vs call_date flags backdating."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Primary product detailed in this call."
+      },
+      {
+        "n": "ndc11",
+        "r": "fk",
+        "d": "FK → dim_product (via ndc11). NDC of the detailed product."
+      },
+      {
+        "n": "brand_name",
+        "r": "attribute",
+        "d": "Denormalized brand name."
+      },
+      {
+        "n": "sample_dropped_flag",
+        "r": "flag",
+        "d": "\"Y\" if product samples were left with HCP. Input to sample_script_ratio."
+      },
+      {
+        "n": "call_objective",
+        "r": "attribute",
+        "d": "Pre-set call goal (e.g. efficacy discussion, patient case review)."
+      },
+      {
+        "n": "call_notes",
+        "r": "attribute",
+        "d": "Free-text rep notes from the call."
+      },
+      {
+        "n": "key_message_delivered",
+        "r": "attribute",
+        "d": "Which approved key message was delivered (e.g. safety, efficacy, dosing)."
+      },
+      {
+        "n": "call_outcome",
+        "r": "attribute",
+        "d": "Result of the call: Successful, No Access, Left Samples Only, etc."
+      },
+      {
+        "n": "next_action",
+        "r": "attribute",
+        "d": "Planned follow-up action logged by the rep."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "fact_call_plan": {
+    "category": "fact",
+    "description": "Monthly call planning targets per rep-prescriber-product combination. Captures what calls each rep planned to make — the \"plan\" side of the plan vs. actual picture. The monthly_call_plan_id is the bridge key to fact_call_activity, enabling call plan attainment and frequency attainment metrics.",
+    "primaryKey": [
+      "monthly_call_plan_id"
+    ],
+    "columns": [
+      {
+        "n": "monthly_call_plan_id",
+        "r": "pk",
+        "d": "Unique plan record identifier — FK anchor for fact_call_activity."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master. Rep this plan belongs to."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. Targeted HCP for this plan."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. Geography of the planned call."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Product to be detailed."
+      },
+      {
+        "n": "plan_year",
+        "r": "temporal",
+        "d": "Calendar year of the plan."
+      },
+      {
+        "n": "plan_month",
+        "r": "temporal",
+        "d": "Calendar month of the plan (1–12)."
+      },
+      {
+        "n": "plan_quarter",
+        "r": "temporal",
+        "d": "Derived quarter (Q1–Q4)."
+      },
+      {
+        "n": "planned_calls_month",
+        "r": "measure",
+        "d": "Number of calls planned for this rep-HCP-product in the month."
+      },
+      {
+        "n": "plan_created_date",
+        "r": "temporal",
+        "d": "Date plan was finalized."
+      },
+      {
+        "n": "plan_last_updated_date",
+        "r": "temporal",
+        "d": "Last modification date — flags mid-cycle plan changes."
+      },
+      {
+        "n": "target_call_duration_minutes",
+        "r": "measure",
+        "d": "Expected call duration target in minutes."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "fact_clm_activity": {
+    "category": "fact",
+    "description": "Granular Closed Loop Marketing (CLM) engagement log — records how each piece of digital sales aid content was used within a call. Enriches fact_call_activity with content-level detail: how long each slide was shown, whether it was skipped, revisited, zoomed, or had video played. Source: Veeva CRM CLM module.",
+    "primaryKey": [
+      "clm_activity_id"
+    ],
+    "columns": [
+      {
+        "n": "clm_activity_id",
+        "r": "pk",
+        "d": "Unique CLM engagement event identifier."
+      },
+      {
+        "n": "call_id",
+        "r": "fk",
+        "d": "FK → fact_call_activity. The parent call this CLM event belongs to."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber."
+      },
+      {
+        "n": "practice_id",
+        "r": "attribute",
+        "d": "Practice identifier (denormalized)."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Product the content relates to."
+      },
+      {
+        "n": "brand_name",
+        "r": "attribute",
+        "d": "Denormalized brand name."
+      },
+      {
+        "n": "clm_file_id",
+        "r": "fk",
+        "d": "FK → dim_clm_content. The specific content file shown."
+      },
+      {
+        "n": "clm_file_name",
+        "r": "attribute",
+        "d": "Denormalized content file name."
+      },
+      {
+        "n": "clm_display_start_timestamp",
+        "r": "temporal",
+        "d": "When this content item began displaying."
+      },
+      {
+        "n": "clm_display_end_timestamp",
+        "r": "temporal",
+        "d": "When this content item stopped displaying."
+      },
+      {
+        "n": "clm_display_duration_seconds",
+        "r": "measure",
+        "d": "Total seconds this content was on screen. Core CLM engagement measure."
+      },
+      {
+        "n": "call_date",
+        "r": "temporal",
+        "d": "Date of the parent call."
+      },
+      {
+        "n": "call_type",
+        "r": "attribute",
+        "d": "In-person vs. virtual."
+      },
+      {
+        "n": "virtual_call_flag",
+        "r": "flag",
+        "d": "\"Y\" if conducted via phone/video."
+      },
+      {
+        "n": "clm_skipped_flag",
+        "r": "flag",
+        "d": "\"Y\" if content was skipped without full display — signals low engagement."
+      },
+      {
+        "n": "clm_revisited_flag",
+        "r": "flag",
+        "d": "\"Y\" if HCP asked rep to go back to this content."
+      },
+      {
+        "n": "clm_zoom_used_flag",
+        "r": "flag",
+        "d": "\"Y\" if rep zoomed in on the content during display."
+      },
+      {
+        "n": "clm_video_played_flag",
+        "r": "flag",
+        "d": "\"Y\" if embedded video was played."
+      },
+      {
+        "n": "consent_captured_flag",
+        "r": "flag",
+        "d": "\"Y\" if HCP consent was digitally captured during this call."
+      },
+      {
+        "n": "device_id",
+        "r": "attribute",
+        "d": "Rep's tablet/device ID used for the call."
+      },
+      {
+        "n": "offline_flag",
+        "r": "flag",
+        "d": "\"Y\" if call was logged offline and synced later."
+      },
+      {
+        "n": "clm_record_created_timestamp",
+        "r": "temporal",
+        "d": "When the CLM record was created in the source system."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "fact_digital_engagement": {
+    "category": "fact",
+    "description": "Virtual Account Engagement (VAE) / email tracking. Records every email sent by a rep to a prescriber and captures open events, click-throughs, timing, and engagement patterns. Complements field call activity with the digital channel, feeding into VAE open-rate metrics used in omnichannel performance measurement.",
+    "primaryKey": [
+      "email_interaction_id"
+    ],
+    "columns": [
+      {
+        "n": "email_interaction_id",
+        "r": "pk",
+        "d": "Unique email interaction identifier."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master. Rep who sent the email."
+      },
+      {
+        "n": "rep_email",
+        "r": "attribute",
+        "d": "Sender email (denormalized for audit trail)."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. Recipient HCP."
+      },
+      {
+        "n": "prescriber_tier",
+        "r": "attribute",
+        "d": "HCP tier at time of send (denormalized)."
+      },
+      {
+        "n": "subject_topic",
+        "r": "attribute",
+        "d": "Email topic / subject line category (approved messaging)."
+      },
+      {
+        "n": "sent_timestamp",
+        "r": "temporal",
+        "d": "When the email was sent."
+      },
+      {
+        "n": "is_opened",
+        "r": "flag",
+        "d": "\"1\" if the email was opened by the HCP."
+      },
+      {
+        "n": "open_timestamp",
+        "r": "temporal",
+        "d": "Timestamp of first open event."
+      },
+      {
+        "n": "is_clicked",
+        "r": "flag",
+        "d": "\"1\" if a link was clicked within the email."
+      },
+      {
+        "n": "click_timestamp",
+        "r": "temporal",
+        "d": "Timestamp of first click event."
+      },
+      {
+        "n": "engagement_day",
+        "r": "temporal",
+        "d": "Day of week of open/click event — used for send-time optimization."
+      },
+      {
+        "n": "engagement_hour",
+        "r": "temporal",
+        "d": "Hour of day of engagement — used for send-time optimization."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Snapshot effective date."
+      }
+    ]
+  },
+  "fact_xponents_rx": {
+    "category": "fact",
+    "description": "IQVIA Xponent® prescription data — the gold standard for measuring prescriber-level Rx behavior. Weekly TRx (Total Prescriptions) and NRx (New Prescriptions) by prescriber, product, and geography. This is the primary numerator for all market share, growth, and HCP-level Rx metrics. The our_product flag enables competitor Rx tracking in the same table.",
+    "primaryKey": [
+      "week_end_date",
+      "prescriber_id",
+      "product_id",
+      "geo_id"
+    ],
+    "columns": [
+      {
+        "n": "week_end_date",
+        "r": "pk",
+        "d": "Week ending date (Saturday). Part of composite PK."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. Part of composite PK."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Part of composite PK."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. Part of composite PK."
+      },
+      {
+        "n": "trx_units",
+        "r": "measure",
+        "d": "Total Rx units (new + refills) dispensed in this week."
+      },
+      {
+        "n": "new_rx_units",
+        "r": "measure",
+        "d": "New Rx units only (NRx) — excludes refills."
+      },
+      {
+        "n": "our_product",
+        "r": "flag",
+        "d": "\"Y\" = company product. Allows competitor Rx to be stored in same table for market share calc."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "IQVIA data date (typically lags by ~2 weeks)."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      }
+    ]
+  },
+  "fact_iqvia_sales": {
+    "category": "fact",
+    "description": "IQVIA market-level sales data at geography and channel granularity. Provides the total market denominator for market share calculations. Also captures competitor product performance via the company_flag. Key distinction from Xponent: this is geography-level (not prescriber-level) and includes sales revenue alongside Rx volume.",
+    "primaryKey": [
+      "week_end_date",
+      "ndc11",
+      "geo_id",
+      "channel_desc"
+    ],
+    "columns": [
+      {
+        "n": "week_end_date",
+        "r": "pk",
+        "d": "Week ending date. Part of composite PK."
+      },
+      {
+        "n": "year",
+        "r": "temporal",
+        "d": "Calendar year (derived from week_end_date)."
+      },
+      {
+        "n": "ndc11",
+        "r": "fk",
+        "d": "FK → dim_product (via ndc11). Part of composite PK."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Surrogate key join."
+      },
+      {
+        "n": "brand_name",
+        "r": "attribute",
+        "d": "Denormalized brand name."
+      },
+      {
+        "n": "generic_name",
+        "r": "attribute",
+        "d": "Denormalized generic name."
+      },
+      {
+        "n": "manufacturer",
+        "r": "attribute",
+        "d": "Denormalized manufacturer."
+      },
+      {
+        "n": "atc_code",
+        "r": "attribute",
+        "d": "Denormalized ATC therapeutic code."
+      },
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. Part of composite PK."
+      },
+      {
+        "n": "zip_id",
+        "r": "attribute",
+        "d": "ZIP-level geography identifier."
+      },
+      {
+        "n": "state",
+        "r": "attribute",
+        "d": "State (denormalized)."
+      },
+      {
+        "n": "channel_desc",
+        "r": "attribute",
+        "d": "Distribution channel: Retail, Mail Order, Specialty Pharmacy, Hospital. Part of composite PK."
+      },
+      {
+        "n": "company_flag",
+        "r": "flag",
+        "d": "\"Y\" = company product. Enables competitor market tracking."
+      },
+      {
+        "n": "trx_units",
+        "r": "measure",
+        "d": "Total Rx units sold in this geo/channel/week."
+      },
+      {
+        "n": "sales_revenue",
+        "r": "measure",
+        "d": "Estimated net sales revenue in USD."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "IQVIA data date."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      }
+    ]
+  },
+  "fact_npa_payer": {
+    "category": "fact",
+    "description": "IQVIA National Prescription Audit (NPA) data with payer type and channel breakdown. Enables payer mix analysis — what share of prescriptions are Commercial, Medicare Part D, Medicaid, or Cash. Also splits by channel (Retail, Mail Order, Specialty). Essential for managed care and market access performance measurement.",
+    "primaryKey": [
+      "week_end_date",
+      "npi_id",
+      "ndc_code",
+      "payer_type",
+      "channel"
+    ],
+    "columns": [
+      {
+        "n": "week_end_date",
+        "r": "pk",
+        "d": "Week ending date. Part of composite PK."
+      },
+      {
+        "n": "npi_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber (via npi_id). Part of composite PK."
+      },
+      {
+        "n": "ims_id",
+        "r": "ak",
+        "d": "IQVIA internal IMS identifier for the prescriber."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber (surrogate). Enables internal join."
+      },
+      {
+        "n": "ndc_code",
+        "r": "fk",
+        "d": "FK → dim_product (via ndc11). Part of composite PK."
+      },
+      {
+        "n": "payer_type",
+        "r": "attribute",
+        "d": "Payer segment: Commercial, Medicare, Medicaid, Cash. Part of composite PK."
+      },
+      {
+        "n": "channel",
+        "r": "attribute",
+        "d": "Distribution channel: Retail, Mail, Specialty. Part of composite PK."
+      },
+      {
+        "n": "trx",
+        "r": "measure",
+        "d": "Total Rx volume for this payer/channel segment."
+      },
+      {
+        "n": "nrx",
+        "r": "measure",
+        "d": "New Rx volume for this payer/channel segment."
+      },
+      {
+        "n": "refills",
+        "r": "measure",
+        "d": "Refill Rx volume — TRx minus NRx."
+      },
+      {
+        "n": "projected_trx",
+        "r": "measure",
+        "d": "IQVIA projection-adjusted TRx (accounts for data coverage gaps)."
+      },
+      {
+        "n": "projected_nrx",
+        "r": "measure",
+        "d": "IQVIA projection-adjusted NRx."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "IQVIA data date."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      }
+    ]
+  },
+  "fact_ddd_dispense": {
+    "category": "fact",
+    "description": "Drug Distribution Data (DDD) — patient-level dispense transactions. The most granular Rx dataset: individual dispense events with days supply, quantity, payer, and channel per patient. Used for patient adherence analysis, days-on-therapy calculation, and patient journey modeling. Contains anonymized patient_id.",
+    "primaryKey": [
+      "transaction_date",
+      "prescriber_id",
+      "ndc11",
+      "patient_id"
+    ],
+    "columns": [
+      {
+        "n": "transaction_date",
+        "r": "pk",
+        "d": "Date of the dispense transaction. Part of composite PK."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber. Prescribing HCP. Part of composite PK."
+      },
+      {
+        "n": "npi_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber (via npi_id). External identifier."
+      },
+      {
+        "n": "ims_id",
+        "r": "ak",
+        "d": "IQVIA IMS identifier for the prescriber."
+      },
+      {
+        "n": "ndc11",
+        "r": "fk",
+        "d": "FK → dim_product (via ndc11). Dispensed product. Part of composite PK."
+      },
+      {
+        "n": "payer_type",
+        "r": "attribute",
+        "d": "Payer type at time of dispense."
+      },
+      {
+        "n": "channel",
+        "r": "attribute",
+        "d": "Dispensing channel: Retail, Specialty, Mail Order."
+      },
+      {
+        "n": "nrx_flag",
+        "r": "flag",
+        "d": "\"Y\" if this is a new prescription (vs. refill)."
+      },
+      {
+        "n": "trx",
+        "r": "measure",
+        "d": "Prescription count (typically 1 per transaction)."
+      },
+      {
+        "n": "patient_id",
+        "r": "attribute",
+        "d": "Anonymized patient identifier. Part of composite PK. Enables patient journey tracking."
+      },
+      {
+        "n": "days_supply",
+        "r": "measure",
+        "d": "Days of medication supplied in this dispense. Key for adherence analysis."
+      },
+      {
+        "n": "quantity",
+        "r": "measure",
+        "d": "Quantity of units dispensed."
+      },
+      {
+        "n": "data_source",
+        "r": "attribute",
+        "d": "Originating data vendor or source feed identifier."
+      },
+      {
+        "n": "data_date",
+        "r": "system",
+        "d": "Data effective date."
+      },
+      {
+        "n": "source_file",
+        "r": "system",
+        "d": "Source file name."
+      },
+      {
+        "n": "sys_load_timestamp",
+        "r": "system",
+        "d": "ETL load timestamp."
+      }
+    ]
+  },
+  "zip_territory_mapping": {
+    "category": "mapping",
+    "description": "Lookup bridge resolving ZIP codes (via geo_id) to sales territory IDs. Used when territory_id is not directly available in source data — for example, enriching IQVIA geographic sales data with territory context before computing territory-level KPIs.",
+    "primaryKey": [
+      "geo_id",
+      "territory_id"
+    ],
+    "columns": [
+      {
+        "n": "geo_id",
+        "r": "fk",
+        "d": "FK → dim_geography. Part of composite PK."
+      },
+      {
+        "n": "zip_code",
+        "r": "attribute",
+        "d": "ZIP code (denormalized for convenience)."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory identifier this ZIP belongs to."
+      }
+    ]
+  },
+  "call_consistency_monthly": {
+    "category": "metric_monthly",
+    "description": "Measures how evenly call activity is distributed across a month per rep. A high ratio of calls made in the last 3 days of the month (end-loading) flags potential data integrity issues or rep behavior problems.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month (YYYY-MM)."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master. Grouping key."
+      },
+      {
+        "n": "total_no_of_calls_made",
+        "r": "measure",
+        "d": "Total calls in the month."
+      },
+      {
+        "n": "no_of_calls_made_in_last_3_days",
+        "r": "measure",
+        "d": "Calls logged in the last 3 calendar days — end-loading signal."
+      },
+      {
+        "n": "call_consistency",
+        "r": "measure",
+        "d": "Derived ratio: last-3-day calls / total calls. Lower = more consistent distribution."
+      }
+    ]
+  },
+  "sales_per_call_monthly": {
+    "category": "metric_monthly",
+    "description": "Productivity KPI measuring TRx units generated per field call made, segmented by product and territory. Quantifies the ROI of sales activity and enables territory benchmarking.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product. Grouping key."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory. Grouping key."
+      },
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "sales_made",
+        "r": "measure",
+        "d": "TRx units attributed to this territory/product."
+      },
+      {
+        "n": "calls_made",
+        "r": "measure",
+        "d": "Total calls made in this territory/product."
+      },
+      {
+        "n": "sales_per_call",
+        "r": "measure",
+        "d": "Derived: sales_made / calls_made."
+      }
+    ]
+  },
+  "prescriber_conversion_monthly": {
+    "category": "metric_monthly",
+    "description": "Tracks the rate at which newly targeted prescribers become active writers of the product. Key metric for measuring field force effectiveness at activating new HCPs.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "new_targeted_prescribers",
+        "r": "measure",
+        "d": "HCPs newly added to target list this month."
+      },
+      {
+        "n": "new_writers_captured",
+        "r": "measure",
+        "d": "Of those targeted, how many wrote at least one Rx."
+      },
+      {
+        "n": "conversion_rate",
+        "r": "measure",
+        "d": "new_writers_captured / new_targeted_prescribers × 100."
+      }
+    ]
+  },
+  "metric_monthly_marketshare_trx": {
+    "category": "metric_monthly",
+    "description": "Monthly TRx (Total Prescription) market share by product, territory, and specialty. Numerator from fact_xponents_rx (our product TRx); denominator from fact_iqvia_sales (total market TRx).",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_iqvia_sales"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty grouping."
+      },
+      {
+        "n": "our_product",
+        "r": "flag",
+        "d": "\"Y\" for company products only."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "our_product_trx_units",
+        "r": "measure",
+        "d": "Our product TRx — numerator."
+      },
+      {
+        "n": "total_market_trx_units",
+        "r": "measure",
+        "d": "Total market TRx (all brands) — denominator."
+      },
+      {
+        "n": "trx_market_share_pct",
+        "r": "measure",
+        "d": "Market share %: our_trx / total_trx × 100."
+      }
+    ]
+  },
+  "sample_script_ratio_monthly": {
+    "category": "metric_monthly",
+    "description": "Measures sampling efficiency — how many TRx units are generated per sample unit distributed. Used to evaluate sampling program ROI and identify over/under-sampling by territory.",
+    "derivedFrom": [
+      "fact_call_activity",
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "sample_distributed",
+        "r": "measure",
+        "d": "Sample units dropped by reps in this territory/month."
+      },
+      {
+        "n": "total_trx",
+        "r": "measure",
+        "d": "TRx units generated."
+      },
+      {
+        "n": "sample_script_ratio",
+        "r": "measure",
+        "d": "total_trx / sample_distributed. Higher = more efficient sampling."
+      }
+    ]
+  },
+  "target_reach": {
+    "category": "metric_monthly",
+    "description": "Measures what percentage of targeted HCPs were actually visited by each rep. Core field force reach KPI — ensures the salesforce is investing time with the right HCPs.",
+    "derivedFrom": [
+      "fact_call_activity",
+      "fact_call_plan"
+    ],
+    "columns": [
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "data_date",
+        "r": "temporal",
+        "d": "Reporting date (point-in-time snapshot)."
+      },
+      {
+        "n": "total_unique_hcp_target",
+        "r": "measure",
+        "d": "Total unique HCPs on this rep's target list."
+      },
+      {
+        "n": "total_unique_hcp_visited",
+        "r": "measure",
+        "d": "Unique targeted HCPs the rep actually visited."
+      },
+      {
+        "n": "target_reach_pct",
+        "r": "measure",
+        "d": "total_unique_hcp_visited / total_unique_hcp_target × 100."
+      }
+    ]
+  },
+  "metric_monthly_growth_nrx": {
+    "category": "metric_monthly",
+    "description": "Month-over-month NRx (New Prescription) growth rate by product, territory, and specialty. Lagged comparison: current period NRx vs. same-period prior month or prior year NRx.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "total_nrx_units",
+        "r": "measure",
+        "d": "NRx units this period."
+      },
+      {
+        "n": "total_nrx_units_prev",
+        "r": "measure",
+        "d": "NRx units prior period (lag)."
+      },
+      {
+        "n": "nrx_growth_pct",
+        "r": "measure",
+        "d": "(current - prior) / prior × 100."
+      }
+    ]
+  },
+  "clm_utilization_monthly": {
+    "category": "metric_monthly",
+    "description": "Percentage of rep calls where CLM (Closed Loop Marketing) digital sales aids were actively used. Tracks digital channel adoption and compliance with promotional guidelines.",
+    "derivedFrom": [
+      "fact_clm_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_calls_made",
+        "r": "measure",
+        "d": "Total calls made by rep in month."
+      },
+      {
+        "n": "calls_using_clm_media",
+        "r": "measure",
+        "d": "Calls where CLM content was shown."
+      },
+      {
+        "n": "clm_utilization_pct",
+        "r": "measure",
+        "d": "calls_using_clm / total_calls × 100."
+      }
+    ]
+  },
+  "hcp_churn_monthly": {
+    "category": "metric_monthly",
+    "description": "Month-over-month HCP retention metric — tracks prescribers who stop writing the product. High churn signals potential access issues, competitive pressure, or gaps in rep engagement with the HCP base.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "current_hcps",
+        "r": "measure",
+        "d": "HCPs who wrote the product this month."
+      },
+      {
+        "n": "prev_hcps",
+        "r": "measure",
+        "d": "HCPs who wrote the product prior month."
+      },
+      {
+        "n": "churned_hcps",
+        "r": "measure",
+        "d": "HCPs present last month but absent this month."
+      },
+      {
+        "n": "churn_rate",
+        "r": "measure",
+        "d": "churned_hcps / prev_hcps × 100."
+      }
+    ]
+  },
+  "metric_monthly_marketshare_nrx": {
+    "category": "metric_monthly",
+    "description": "Monthly NRx (New Prescription) market share — same structure as TRx market share but focused exclusively on new patients. NRx share is more sensitive to sales force effectiveness than TRx share.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_iqvia_sales"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "our_product",
+        "r": "flag",
+        "d": "Company product flag."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "our_product_nrx_units",
+        "r": "measure",
+        "d": "Our product NRx — numerator."
+      },
+      {
+        "n": "total_market_nrx_units",
+        "r": "measure",
+        "d": "Total market NRx — denominator."
+      },
+      {
+        "n": "nrx_market_share_pct",
+        "r": "measure",
+        "d": "NRx market share %."
+      }
+    ]
+  },
+  "freq_attainment_hcp": {
+    "category": "metric_quarterly",
+    "description": "Quarterly call frequency attainment at the HCP level — how many visits were planned vs. actually delivered per prescriber. Ensures high-value HCPs receive the target number of interactions per quarter.",
+    "derivedFrom": [
+      "fact_call_activity",
+      "fact_call_plan"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter (e.g. 2024-Q1)."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber."
+      },
+      {
+        "n": "planned_visits",
+        "r": "measure",
+        "d": "Visits planned per call plan."
+      },
+      {
+        "n": "actual_visits",
+        "r": "measure",
+        "d": "Visits actually completed per call activity."
+      },
+      {
+        "n": "freq_attainment_pct",
+        "r": "measure",
+        "d": "actual_visits / planned_visits × 100."
+      }
+    ]
+  },
+  "avg_interaction_time_monthly": {
+    "category": "metric_monthly",
+    "description": "Average call duration per rep per month. Longer, higher-quality interactions tend to correlate with better HCP engagement and key message recall. Benchmarks reps against each other and against plan targets.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_no_of_calls",
+        "r": "measure",
+        "d": "Total calls in the month."
+      },
+      {
+        "n": "total_time_spent",
+        "r": "measure",
+        "d": "Total minutes across all calls."
+      },
+      {
+        "n": "avg_interaction_time",
+        "r": "measure",
+        "d": "total_time_spent / total_no_of_calls."
+      }
+    ]
+  },
+  "prescription_velocity_monthly": {
+    "category": "metric_monthly",
+    "description": "Rate of change in TRx volume month-over-month per product and territory. A leading indicator of territory momentum — positive velocity signals growing prescriber adoption; negative signals potential issues needing intervention.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "trx_current",
+        "r": "measure",
+        "d": "TRx this month."
+      },
+      {
+        "n": "trx_previous",
+        "r": "measure",
+        "d": "TRx prior month."
+      },
+      {
+        "n": "velocity",
+        "r": "measure",
+        "d": "(trx_current - trx_previous) / trx_previous. Month-over-month Rx velocity."
+      }
+    ]
+  },
+  "metric_monthly_growth_trx": {
+    "category": "metric_monthly",
+    "description": "Month-over-month TRx (Total Prescription) growth rate by product, territory, and specialty. Companion to NRx growth — TRx growth includes refill dynamics and thus reflects both new patient starts and adherence trends.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "total_trx_units",
+        "r": "measure",
+        "d": "TRx units this period."
+      },
+      {
+        "n": "total_trx_units_prev",
+        "r": "measure",
+        "d": "TRx units prior period."
+      },
+      {
+        "n": "trx_growth_pct",
+        "r": "measure",
+        "d": "(current - prior) / prior × 100."
+      }
+    ]
+  },
+  "calls_per_day_monthly": {
+    "category": "metric_monthly",
+    "description": "Average number of field calls a rep completes per working day in a month. Standard field force productivity benchmark used in quota-setting and performance management.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "calls_made",
+        "r": "measure",
+        "d": "Total calls made in month."
+      },
+      {
+        "n": "calls_per_day",
+        "r": "measure",
+        "d": "calls_made / working days in month."
+      }
+    ]
+  },
+  "call_status_monthly": {
+    "category": "metric_monthly",
+    "description": "CRM submission compliance metric — compares calls logged vs. calls formally submitted/approved in the system. High gaps indicate data quality issues or delayed CRM entry by reps.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_calls_made",
+        "r": "measure",
+        "d": "All call records in the system for this rep/month."
+      },
+      {
+        "n": "total_calls_submitted",
+        "r": "measure",
+        "d": "Calls in \"Submitted\" status in CRM."
+      },
+      {
+        "n": "call_status_sub",
+        "r": "measure",
+        "d": "Submission rate: submitted / total × 100."
+      }
+    ]
+  },
+  "virtual_call_mix_monthly": {
+    "category": "metric_monthly",
+    "description": "Share of calls conducted virtually (phone/video) vs. in-person each month. Tracks omnichannel engagement strategy execution and digital adoption trends across the sales force.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_calls",
+        "r": "measure",
+        "d": "Total calls in month."
+      },
+      {
+        "n": "virtual_calls",
+        "r": "measure",
+        "d": "Calls with virtual_call_flag = Y."
+      },
+      {
+        "n": "virtual_call_pct",
+        "r": "measure",
+        "d": "virtual_calls / total_calls × 100."
+      }
+    ]
+  },
+  "spillover_sales_monthly": {
+    "category": "metric_monthly",
+    "description": "TRx generated outside a rep's defined territory boundaries — \"spillover.\" Quantifies how much Rx activity from an HCP flows into neighboring territories. Important for fair quota allocation and rep credit attribution.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "zip_territory_mapping"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Home territory."
+      },
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "total_trx",
+        "r": "measure",
+        "d": "Total TRx attributed to HCPs in this territory."
+      },
+      {
+        "n": "local_trx",
+        "r": "measure",
+        "d": "TRx filled within the territory boundaries."
+      },
+      {
+        "n": "spillover_trx",
+        "r": "measure",
+        "d": "TRx filled outside the territory — the spillover volume."
+      }
+    ]
+  },
+  "vae_open_rate_prescriber_monthly": {
+    "category": "metric_monthly",
+    "description": "Email open rate per prescriber per month. Part of the omnichannel engagement KPI suite — measures digital channel effectiveness alongside field call activity.",
+    "derivedFrom": [
+      "fact_digital_engagement"
+    ],
+    "columns": [
+      {
+        "n": "month",
+        "r": "temporal",
+        "d": "Reporting month."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber."
+      },
+      {
+        "n": "total_no_of_mails_sent",
+        "r": "measure",
+        "d": "Total emails sent to this HCP in the month."
+      },
+      {
+        "n": "no_of_mails_opened",
+        "r": "measure",
+        "d": "Emails opened by HCP."
+      },
+      {
+        "n": "open_rate",
+        "r": "measure",
+        "d": "no_of_mails_opened / total_no_of_mails_sent × 100."
+      }
+    ]
+  },
+  "call_consistency_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly aggregation of call distribution consistency per rep. Same logic as monthly version — measures end-loading patterns across the full quarter.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_no_of_calls_made",
+        "r": "measure",
+        "d": "Total calls in the quarter."
+      },
+      {
+        "n": "no_of_calls_made_in_last_3_days",
+        "r": "measure",
+        "d": "End-loading signal calls."
+      },
+      {
+        "n": "call_consistency",
+        "r": "measure",
+        "d": "End-loading ratio for the quarter."
+      }
+    ]
+  },
+  "prescriber_conversion_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly prescriber conversion — new targeted HCPs converted to writers in the quarter. Provides a more stable view than monthly given the longer window.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "new_targeted_prescribers",
+        "r": "measure",
+        "d": "Newly targeted HCPs this quarter."
+      },
+      {
+        "n": "new_writers_captured",
+        "r": "measure",
+        "d": "Of targeted, those who wrote Rx."
+      },
+      {
+        "n": "conversion_rate",
+        "r": "measure",
+        "d": "Quarterly conversion %."
+      }
+    ]
+  },
+  "metric_quarterly_marketshare_trx": {
+    "category": "metric_quarterly",
+    "description": "Quarterly TRx market share — stable, smoothed view of market position used in Business Reviews and leadership reporting.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_iqvia_sales"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "our_product",
+        "r": "flag",
+        "d": "Company product flag."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "our_product_trx_units",
+        "r": "measure",
+        "d": "Our product quarterly TRx."
+      },
+      {
+        "n": "total_market_trx_units",
+        "r": "measure",
+        "d": "Total market quarterly TRx."
+      },
+      {
+        "n": "trx_market_share_pct",
+        "r": "measure",
+        "d": "Quarterly TRx market share %."
+      }
+    ]
+  },
+  "avg_interaction_time_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly average call duration per rep. Quarterly view smooths out monthly variance for performance reviews.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_no_of_calls",
+        "r": "measure",
+        "d": "Total calls in quarter."
+      },
+      {
+        "n": "total_time_spent",
+        "r": "measure",
+        "d": "Total minutes in quarter."
+      },
+      {
+        "n": "avg_interaction_time",
+        "r": "measure",
+        "d": "Quarterly average call duration (minutes)."
+      }
+    ]
+  },
+  "metric_quarterly_marketshare_nrx": {
+    "category": "metric_quarterly",
+    "description": "Quarterly NRx market share — quarterly view of new patient acquisition share of the market.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_iqvia_sales"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "our_product",
+        "r": "flag",
+        "d": "Company product flag."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "our_product_nrx_units",
+        "r": "measure",
+        "d": "Our product quarterly NRx."
+      },
+      {
+        "n": "total_market_nrx_units",
+        "r": "measure",
+        "d": "Total market quarterly NRx."
+      },
+      {
+        "n": "nrx_market_share_pct",
+        "r": "measure",
+        "d": "Quarterly NRx market share %."
+      }
+    ]
+  },
+  "metric_quarterly_growth_nrx": {
+    "category": "metric_quarterly",
+    "description": "Quarter-over-quarter NRx growth rate. Used in Business Review decks and quarterly goal-setting cycles.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "total_nrx_units",
+        "r": "measure",
+        "d": "NRx this quarter."
+      },
+      {
+        "n": "total_nrx_units_prev",
+        "r": "measure",
+        "d": "NRx prior quarter."
+      },
+      {
+        "n": "nrx_growth_pct",
+        "r": "measure",
+        "d": "Quarter-over-quarter NRx growth %."
+      }
+    ]
+  },
+  "metric_quarterly_growth_trx": {
+    "category": "metric_quarterly",
+    "description": "Quarter-over-quarter TRx growth rate. Tracks overall prescription momentum including refill trends.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "speciality",
+        "r": "attribute",
+        "d": "HCP specialty."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "sales_quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "total_trx_units",
+        "r": "measure",
+        "d": "TRx this quarter."
+      },
+      {
+        "n": "total_trx_units_prev",
+        "r": "measure",
+        "d": "TRx prior quarter."
+      },
+      {
+        "n": "trx_growth_pct",
+        "r": "measure",
+        "d": "Quarter-over-quarter TRx growth %."
+      }
+    ]
+  },
+  "calls_per_day_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly average daily call rate per rep. Used in quarterly performance reviews and rep ranking.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "calls_made",
+        "r": "measure",
+        "d": "Total calls in quarter."
+      },
+      {
+        "n": "calls_per_day",
+        "r": "measure",
+        "d": "Average calls per working day."
+      }
+    ]
+  },
+  "call_status_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly CRM submission compliance. Quarterly view provides better signal for rep compliance audits.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_calls_made",
+        "r": "measure",
+        "d": "All calls in quarter."
+      },
+      {
+        "n": "total_calls_submitted",
+        "r": "measure",
+        "d": "Submitted calls in quarter."
+      },
+      {
+        "n": "call_status_sub",
+        "r": "measure",
+        "d": "Quarterly submission rate %."
+      }
+    ]
+  },
+  "virtual_call_mix_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly virtual call adoption rate. Used to track omnichannel strategy compliance across the sales force on a quarterly cadence.",
+    "derivedFrom": [
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "rep_id",
+        "r": "fk",
+        "d": "FK → dim_rep_master."
+      },
+      {
+        "n": "total_calls",
+        "r": "measure",
+        "d": "Total calls in quarter."
+      },
+      {
+        "n": "virtual_calls",
+        "r": "measure",
+        "d": "Virtual calls in quarter."
+      },
+      {
+        "n": "virtual_call_pct",
+        "r": "measure",
+        "d": "Quarterly virtual call mix %."
+      }
+    ]
+  },
+  "spillover_sales_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly spillover Rx analysis — provides a more complete picture of territory boundary effects for quota and incentive compensation reviews.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "zip_territory_mapping"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Home territory."
+      },
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "total_trx",
+        "r": "measure",
+        "d": "Total quarterly TRx."
+      },
+      {
+        "n": "local_trx",
+        "r": "measure",
+        "d": "In-territory TRx."
+      },
+      {
+        "n": "spillover_trx",
+        "r": "measure",
+        "d": "Out-of-territory TRx."
+      }
+    ]
+  },
+  "incr_sales_per_call_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Incremental TRx generated per call vs. prior quarter baseline. Measures the true ROI of incremental sales force activity — how much additional Rx is driven by each additional call beyond the baseline.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "sales_current",
+        "r": "measure",
+        "d": "TRx this quarter."
+      },
+      {
+        "n": "sales_previous",
+        "r": "measure",
+        "d": "TRx prior quarter (baseline)."
+      },
+      {
+        "n": "incr_sales_per_call",
+        "r": "measure",
+        "d": "(sales_current - sales_previous) / calls_made. Incremental sales efficiency."
+      }
+    ]
+  },
+  "hcp_churn_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly HCP churn analysis — prescriber retention view over the full quarter. Feeds into quarterly business reviews for market access and competitive landscape discussions.",
+    "derivedFrom": [
+      "fact_xponents_rx"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "current_hcps",
+        "r": "measure",
+        "d": "HCPs who wrote product this quarter."
+      },
+      {
+        "n": "prev_hcps",
+        "r": "measure",
+        "d": "HCPs who wrote product prior quarter."
+      },
+      {
+        "n": "churned_hcps",
+        "r": "measure",
+        "d": "HCPs lost quarter-over-quarter."
+      },
+      {
+        "n": "churn_rate",
+        "r": "measure",
+        "d": "Quarterly HCP churn %."
+      }
+    ]
+  },
+  "sales_per_call_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly TRx per call productivity metric. Provides a stable, quarter-level view of field force Rx generation efficiency for QBR presentations.",
+    "derivedFrom": [
+      "fact_xponents_rx",
+      "fact_call_activity"
+    ],
+    "columns": [
+      {
+        "n": "product_id",
+        "r": "fk",
+        "d": "FK → dim_product."
+      },
+      {
+        "n": "territory_id",
+        "r": "attribute",
+        "d": "Sales territory."
+      },
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "sales_made",
+        "r": "measure",
+        "d": "Quarterly TRx attributed to territory."
+      },
+      {
+        "n": "calls_made",
+        "r": "measure",
+        "d": "Total calls in quarter."
+      },
+      {
+        "n": "sales_per_call",
+        "r": "measure",
+        "d": "Quarterly TRx per call."
+      }
+    ]
+  },
+  "vae_open_rate_prescriber_quarterly": {
+    "category": "metric_quarterly",
+    "description": "Quarterly email open rate per prescriber. Quarterly view smooths campaign timing variance for strategic digital engagement analysis.",
+    "derivedFrom": [
+      "fact_digital_engagement"
+    ],
+    "columns": [
+      {
+        "n": "quarter",
+        "r": "temporal",
+        "d": "Reporting quarter."
+      },
+      {
+        "n": "prescriber_id",
+        "r": "fk",
+        "d": "FK → dim_prescriber."
+      },
+      {
+        "n": "total_no_of_mails_sent",
+        "r": "measure",
+        "d": "Emails sent to HCP in quarter."
+      },
+      {
+        "n": "no_of_mails_opened",
+        "r": "measure",
+        "d": "Emails opened in quarter."
+      },
+      {
+        "n": "open_rate",
+        "r": "measure",
+        "d": "Quarterly email open rate %."
+      }
+    ]
+  }
+}
