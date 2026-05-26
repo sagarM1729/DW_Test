@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, count, when, round as _round, lit, expr
+from delta.tables import DeltaTable
 import argparse
 import sys
 import os
@@ -112,6 +113,33 @@ def compute_metric_monthly_marketshare_trx(spark: SparkSession, source_db: str =
     gold_df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(table_path)
     print(f"Saved to {table_path}")
 
+def compute_weekly_gold_aggregations(spark: SparkSession, source_db: str = "silver", target_db: str = "gold"):
+    """
+    P2.03 Phase 2 - Silver to Gold & Agg:
+    Aggregate source-aligned gold tables into weekly-grain gold aggregation tables and enable incremental updates.
+    """
+    print("Computing weekly-grain gold aggregations (P2.03)...")
+    df_rx = spark.table(f"{source_db}.fact_xponents_rx")
+
+    weekly_agg = df_rx.groupBy("product_id", "geo_id", "week_end_date") \
+                      .agg(_sum("trx_units").alias("total_weekly_trx"),
+                           _sum("new_rx_units").alias("total_weekly_nrx"))
+
+    table_path = f"{target_db}.weekly_rx_aggregation"
+
+    # Enable incremental updates by using MERGE based on the weekly grain PKs
+    if DeltaTable.isDeltaTable(spark, table_path) or spark.catalog.tableExists(table_path):
+        target_table = DeltaTable.forName(spark, table_path)
+        (target_table.alias("t")
+         .merge(weekly_agg.alias("s"),
+                "t.product_id = s.product_id AND t.geo_id = s.geo_id AND t.week_end_date = s.week_end_date")
+         .whenMatchedUpdateAll()
+         .whenNotMatchedInsertAll()
+         .execute())
+    else:
+        weekly_agg.write.format("delta").saveAsTable(table_path)
+
+    print(f"Weekly aggregation saved to {table_path}")
 
 def main(spark: SparkSession, source_db: str, target_db: str, metric_name: str = "all"):
     if metric_name == "all" or metric_name == "sales_per_call_monthly":
@@ -123,6 +151,8 @@ def main(spark: SparkSession, source_db: str, target_db: str, metric_name: str =
     if metric_name == "all" or metric_name == "metric_monthly_marketshare_trx":
         compute_metric_monthly_marketshare_trx(spark, source_db, target_db)
 
+    if metric_name == "all" or metric_name == "weekly_aggregations":
+        compute_weekly_gold_aggregations(spark, source_db, target_db)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute Gold Layer Aggregations and Metrics")

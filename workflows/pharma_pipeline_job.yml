@@ -2,38 +2,72 @@ name: "Pharma Pipeline Job"
 email_notifications:
   on_failure: ["data-engineers@example.com"]
 tasks:
-  - task_key: "Ingest_Bronze_Dim_Rep"
+  # P1.01: Source to Bronze
+  - task_key: "Bronze_Ingest_Dim_Rep"
     spark_python_task:
       python_file: "src/bronze/ingest_bronze.py"
       parameters: ["--table_name", "dim_rep_master", "--source_path", "/mnt/adls/landing/dim_rep_master"]
     cluster_key: "default_cluster"
 
-  - task_key: "Ingest_Bronze_Fact_Call"
+  - task_key: "Bronze_Ingest_Fact_Rx"
+    spark_python_task:
+      python_file: "src/bronze/ingest_bronze.py"
+      parameters: ["--table_name", "fact_xponents_rx", "--source_path", "/mnt/adls/landing/fact_xponents_rx"]
+    cluster_key: "default_cluster"
+
+  - task_key: "Bronze_Ingest_Fact_Call"
     spark_python_task:
       python_file: "src/bronze/ingest_bronze.py"
       parameters: ["--table_name", "fact_call_activity", "--source_path", "/mnt/adls/landing/fact_call_activity"]
     cluster_key: "default_cluster"
 
-  - task_key: "Upsert_Silver_Dim_Rep"
+  # P1.02, P1.03, P1.04: Bronze to Silver
+  - task_key: "Silver_Upsert_Dim_Rep"
     depends_on:
-      - task_key: "Ingest_Bronze_Dim_Rep"
+      - task_key: "Bronze_Ingest_Dim_Rep"
     spark_python_task:
       python_file: "src/silver/upsert_silver.py"
       parameters: ["--table_name", "dim_rep_master"]
     cluster_key: "default_cluster"
 
-  - task_key: "Upsert_Silver_Fact_Call"
+  - task_key: "Silver_Upsert_Fact_Rx"
     depends_on:
-      - task_key: "Ingest_Bronze_Fact_Call"
+      - task_key: "Bronze_Ingest_Fact_Rx"
+    spark_python_task:
+      python_file: "src/silver/upsert_silver.py"
+      parameters: ["--table_name", "fact_xponents_rx"]
+    cluster_key: "default_cluster"
+
+  - task_key: "Silver_Upsert_Fact_Call"
+    depends_on:
+      - task_key: "Bronze_Ingest_Fact_Call"
     spark_python_task:
       python_file: "src/silver/upsert_silver.py"
       parameters: ["--table_name", "fact_call_activity"]
     cluster_key: "default_cluster"
 
-  - task_key: "Aggregate_Gold_Metrics"
+  # P2.01, P2.02: Silver to Gold Dimensions (SCD2)
+  - task_key: "Gold_SCD2_Dim_Rep"
     depends_on:
-      - task_key: "Upsert_Silver_Dim_Rep"
-      - task_key: "Upsert_Silver_Fact_Call"
+      - task_key: "Silver_Upsert_Dim_Rep"
+    spark_python_task:
+      python_file: "src/gold/gold_dimensions.py"
+      parameters: ["--table_name", "dim_rep_master", "--primary_key", "rep_id"]
+    cluster_key: "default_cluster"
+
+  # P2.01, P2.03: Silver to Gold Aggregations
+  - task_key: "Gold_Weekly_Aggregations"
+    depends_on:
+      - task_key: "Silver_Upsert_Fact_Rx"
+    spark_python_task:
+      python_file: "src/gold/aggregate_gold.py"
+      parameters: ["--metric_name", "weekly_aggregations"]
+    cluster_key: "default_cluster"
+
+  - task_key: "Gold_Monthly_Metrics"
+    depends_on:
+      - task_key: "Silver_Upsert_Fact_Rx"
+      - task_key: "Silver_Upsert_Fact_Call"
     spark_python_task:
       python_file: "src/gold/aggregate_gold.py"
       parameters: ["--metric_name", "all"]
