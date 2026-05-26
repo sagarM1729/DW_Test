@@ -1,10 +1,13 @@
 from pyspark.sql import SparkSession
 from delta.tables import DeltaTable
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_gold_call_enriched(spark: SparkSession, catalog: str = "main", source_db: str = "silver", target_db: str = "gold"):
     """ Enriches fact_call_activity with dimensions """
-    print("Building gold_call_enriched...")
+    logger.info("Building gold_call_enriched...")
     df_calls = spark.table(f"{catalog}.{source_db}.fact_call_activity")
     df_rep = spark.table(f"{catalog}.{source_db}.dim_rep_master")
     df_prescriber = spark.table(f"{catalog}.{source_db}.dim_prescriber")
@@ -16,9 +19,10 @@ def create_gold_call_enriched(spark: SparkSession, catalog: str = "main", source
 
     target_path = f"{catalog}.{target_db}.gold_call_enriched"
     enriched.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(target_path)
-    print(f"Saved {target_path}")
+    logger.info(f"Saved {target_path}")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=str, default="main")
     parser.add_argument("--source_db", type=str, default="silver")

@@ -2,13 +2,16 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, count, when, round as _round, expr
 from delta.tables import DeltaTable
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def compute_sales_per_call_monthly(spark: SparkSession, catalog: str = "main", target_db: str = "gold"):
     """
     Computes 'sales_per_call_monthly' incrementally from source_aligned tables.
     For simplicity, assumes full overwrite of the monthly metric or a rolling merge.
     """
-    print("Computing sales_per_call_monthly...")
+    logger.info("Computing sales_per_call_monthly...")
     rx_enriched = spark.table(f"{catalog}.{target_db}.gold_rx_enriched")
     call_enriched = spark.table(f"{catalog}.{target_db}.gold_call_enriched")
     target_table = f"{catalog}.{target_db}.sales_per_call_monthly"
@@ -35,9 +38,10 @@ def compute_sales_per_call_monthly(spark: SparkSession, catalog: str = "main", t
          .execute())
     else:
         gold_df.write.format("delta").saveAsTable(target_table)
-    print(f"Incremental aggregation complete for {target_table}")
+    logger.info(f"Incremental aggregation complete for {target_table}")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=str, default="main")
     parser.add_argument("--target_db", type=str, default="gold")

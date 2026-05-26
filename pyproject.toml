@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pharma_datalake_framework"
+version = "0.1.0"
+description = "A Databricks Medallion Architecture Framework for Pharma Commercial Data"
+authors = [
+    { name="Data Engineering Team", email="data-engineers@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pyspark>=3.4.0",
+    "delta-spark>=2.4.0",
+]
+
+[tool.setuptools]
+packages = ["src"]

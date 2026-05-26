@@ -2,14 +2,18 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, count, when, round as _round, expr
 from delta.tables import DeltaTable
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def compute_territory_metrics(spark: SparkSession, catalog: str = "main", target_db: str = "gold"):
-    print("Computing Territory Metrics...")
+    logger.info("Computing Territory Metrics...")
     # Add metric implementations here for spillover_sales, freq_attainment etc.
     # Currently a placeholder to demonstrate domain split.
-    print("Territory metrics logic would execute here.")
+    logger.info("Territory metrics logic would execute here.")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=str, default="main")
     parser.add_argument("--target_db", type=str, default="gold")

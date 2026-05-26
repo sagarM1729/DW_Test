@@ -2,9 +2,12 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, count, when, round as _round, expr
 from delta.tables import DeltaTable
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def compute_call_consistency_monthly(spark: SparkSession, catalog: str = "main", target_db: str = "gold"):
-    print("Computing call_consistency_monthly...")
+    logger.info("Computing call_consistency_monthly...")
     call_enriched = spark.table(f"{catalog}.{target_db}.gold_call_enriched")
     target_table = f"{catalog}.{target_db}.call_consistency_monthly"
 
@@ -31,9 +34,10 @@ def compute_call_consistency_monthly(spark: SparkSession, catalog: str = "main",
          .execute())
     else:
         gold_df.write.format("delta").saveAsTable(target_table)
-    print(f"Incremental aggregation complete for {target_table}")
+    logger.info(f"Incremental aggregation complete for {target_table}")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=str, default="main")
     parser.add_argument("--target_db", type=str, default="gold")

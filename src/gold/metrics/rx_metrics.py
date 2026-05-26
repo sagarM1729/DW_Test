@@ -2,9 +2,12 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, when, round as _round, expr
 from delta.tables import DeltaTable
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def compute_metric_monthly_marketshare_trx(spark: SparkSession, catalog: str = "main", target_db: str = "gold"):
-    print("Computing metric_monthly_marketshare_trx...")
+    logger.info("Computing metric_monthly_marketshare_trx...")
     rx_enriched = spark.table(f"{catalog}.{target_db}.gold_rx_enriched")
     iqvia_enriched = spark.table(f"{catalog}.{target_db}.gold_iqvia_enriched")
     target_table = f"{catalog}.{target_db}.metric_monthly_marketshare_trx"
@@ -34,9 +37,10 @@ def compute_metric_monthly_marketshare_trx(spark: SparkSession, catalog: str = "
          .execute())
     else:
         gold_df.write.format("delta").saveAsTable(target_table)
-    print(f"Incremental aggregation complete for {target_table}")
+    logger.info(f"Incremental aggregation complete for {target_table}")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=str, default="main")
     parser.add_argument("--target_db", type=str, default="gold")

@@ -1,11 +1,6 @@
 import pytest
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType
-import os
-import shutil
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 @pytest.fixture(scope="session")
 def spark():
@@ -14,13 +9,11 @@ def spark():
         .master("local[2]") \
         .getOrCreate()
 
-    # We create basic DBs for logic testing (avoiding Unity Catalog full namespacing requirements in raw local PySpark)
     spark.sql("CREATE DATABASE IF NOT EXISTS main")
-
     yield spark
 
 def test_silver_dq_quarantine_logic(spark):
-    from src.silver.upsert_silver_fact import apply_data_quality_and_quarantine
+    from src.utils.transforms import apply_data_quality_and_quarantine
 
     schema = StructType([
         StructField("id", StringType(), True),
@@ -37,7 +30,6 @@ def test_silver_dq_quarantine_logic(spark):
 
     df = spark.createDataFrame(data, schema=schema)
 
-    # Process - Monkeypatch the saveAsTable so it doesn't fail on missing Delta driver in local env
     def mock_save(*args, **kwargs):
         pass
 
@@ -47,7 +39,6 @@ def test_silver_dq_quarantine_logic(spark):
     try:
         valid_df = apply_data_quality_and_quarantine(spark, df, primary_keys=["id"], catalog="spark_catalog", target_db="default", table_name="test_dq")
 
-        # Assert
         assert valid_df.count() == 1
         assert valid_df.collect()[0]["id"] == "1"
     finally:

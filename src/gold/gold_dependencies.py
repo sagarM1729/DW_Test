@@ -1,8 +1,6 @@
 import json
-import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.config import config
 
 class GoldDependencyManager:
@@ -29,10 +27,10 @@ class GoldDependencyManager:
         dependencies = self.get_dependencies_for_gold_table(gold_table_name)
 
         if not dependencies:
-            print(f"No explicit dependencies defined for {gold_table_name}. Returning True.")
+            logger.info(f"No explicit dependencies defined for {gold_table_name}. Returning True.")
             return True
 
-        print(f"Validating dependencies for {gold_table_name}: {dependencies}")
+        logger.info(f"Validating dependencies for {gold_table_name}: {dependencies}")
 
         for dep in dependencies:
             full_table_path = f"{catalog}.{source_db}.{dep}"
@@ -40,16 +38,16 @@ class GoldDependencyManager:
             # Check if table exists
             table_exists = spark.catalog.tableExists(full_table_path)
             if not table_exists:
-                print(f"Dependency Failed: Table {full_table_path} does not exist.")
+                logger.info(f"Dependency Failed: Table {full_table_path} does not exist.")
                 return False
 
             # Check if table has data
             count = spark.table(full_table_path).count()
             if count == 0:
-                print(f"Dependency Failed: Table {full_table_path} is empty.")
+                logger.info(f"Dependency Failed: Table {full_table_path} is empty.")
                 return False
 
-        print(f"All dependencies met for {gold_table_name}.")
+        logger.info(f"All dependencies met for {gold_table_name}.")
         return True
 
     def get_execution_order(self):
@@ -70,12 +68,13 @@ class GoldDependencyManager:
         }
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     # Demonstration of the dependency manager
     manager = GoldDependencyManager()
-    print("Execution Order Strategy:")
+    logger.info("Execution Order Strategy:")
     order = manager.get_execution_order()
     for layer, tables in order.items():
-        print(f"--- {layer.upper()} ---")
+        logger.info(f"--- {layer.upper()} ---")
         for t in tables[:3]:  # Print first 3 for brevity
             deps = manager.get_dependencies_for_gold_table(t)
-            print(f"  {t} -> depends on: {deps}")
+            logger.info(f"  {t} -> depends on: {deps}")
