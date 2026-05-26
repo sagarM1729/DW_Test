@@ -20,7 +20,7 @@ def spark():
     yield spark
 
 def test_silver_dq_quarantine_logic(spark):
-    from src.silver.upsert_silver import apply_data_quality_and_quarantine
+    from src.silver.upsert_silver_fact import apply_data_quality_and_quarantine
 
     schema = StructType([
         StructField("id", StringType(), True),
